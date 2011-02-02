@@ -18,7 +18,7 @@ sub main {
     $portdir =~ m{(/[^'"]*)};
     $portdir = $1;
     my $resp = LWP::UserAgent->new->post('http://www.portagefilelist.de/index.php/Special:PFLQuery2', [file => $_[0], searchfile => 'lookup', lookup => 'file', txt => 1]);
-    die 'connection failed\n' unless $resp->is_success();
+    die "connection failed\n" unless $resp->is_success;
 
     my %pkg;
     for (split /\n/, $resp->content) {
@@ -28,11 +28,11 @@ sub main {
 	$pkg{"$category/$package"}[0]{"$path/$file"} = 1;
 	push @{$pkg{"$category/$package"}[1]}, $version;
     }
-
     unless (%pkg) {
 	print "No matched found\n";
 	exit;
     }
+
     my $num = 0;
     while (my($catpkg, $rest) = each %pkg) {
 	my($filename, $versions) = @$rest;
@@ -62,7 +62,5 @@ sub main {
     print "\nFound $num matches\n";
 }
 
-unless ($ARGV[0]) {
-    die "Usage: ${[basename $0]}[0] filename\n";
-}
+die "Usage: ${[basename $0]}[0] filename\n" unless $ARGV[0];
 main $ARGV[0];
