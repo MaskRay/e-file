@@ -6,13 +6,13 @@ use LWP;
 use File::Basename;
 
 sub setcolor {
-    "\033[$_[0];$_[1]m";
+    "\e[" . join(';', @_) . 'm';
 }
 
-my $resetcolor = "\033[0m";
+my $resetcolor = "\e[0m";
 
 sub main {
-    my $portdir = `emerge --info 2>- | grep ^PORTDIR\\=`;
+    my $portdir = `emerge --info 2>/dev/null | grep ^PORTDIR\\=`;
     my $is_gentoo = ! $?;
     warn "`emerge' not found. Please run on Gentoo.\n\n" if $?;
     $portdir =~ m{(/[^'"]*)};
@@ -38,13 +38,13 @@ sub main {
 	my($filename, $versions) = @$rest;
 	print "\n" if $num++;
 	if (glob "/var/db/pkg/$catpkg-*") {
-	    print "[${[setcolor(1,32)]}[0]${[setcolor(1,7)]}[0]I$resetcolor] ${[setcolor(1,32)]}[0]$catpkg$resetcolor\n";
+	    print "[${[setcolor(1,32,7)]}[0]I$resetcolor] ${[setcolor(1,32)]}[0]$catpkg$resetcolor\n";
 	} else {
 	    my($cat, $pkg) = split '/', $catpkg;
-	    print "${[setcolor(0,32)]}[0]*$resetcolor $cat/${[setcolor(1,1)]}[0]$pkg$resetcolor\n";
+	    print "${[setcolor(0,32)]}[0]*$resetcolor $cat/${[setcolor(1)]}[0]$pkg$resetcolor\n";
 	}
-	print "     ${[setcolor(0,32)]}[0]Available versions:  ", join ' ', @$versions, "$resetcolor\n";
-        print "     ${[setcolor(0,32)]}[0]Matched Files:       $resetcolor", join '; ', keys %$filename, "\n";
+	print "     ${[setcolor(0,32)]}[0]Available versions:  ", join(' ', @$versions), "$resetcolor\n";
+        print "     ${[setcolor(0,32)]}[0]Matched Files:       $resetcolor", join('; ', keys %$filename), "\n";
 
 	next unless $is_gentoo;
 	if (my $ebuild = (glob "$portdir/$catpkg/*.ebuild")[-1]) {
