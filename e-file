@@ -1,0 +1,68 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use LWP;
+use File::Basename;
+
+sub setcolor {
+    "\033[$_[0];$_[1]m";
+}
+
+my $resetcolor = "\033[0m";
+
+sub main {
+    my $portdir = `emerge --info 2>- | grep ^PORTDIR\\=`;
+    my $is_gentoo = ! $?;
+    warn "`emerge' not found. Please run on Gentoo.\n\n" if $?;
+    $portdir =~ m{(/[^'"]*)};
+    $portdir = $1;
+    my $resp = LWP::UserAgent->new->post('http://www.portagefilelist.de/index.php/Special:PFLQuery2', [file => $_[0], searchfile => 'lookup', lookup => 'file', txt => 1]);
+    die 'connection failed\n' unless $resp->is_success();
+
+    my %pkg;
+    for (split /\n/, $resp->content) {
+	my($category, $package, $path, $file, $misc, $version) = split /\s+/, $_;
+	next if $category eq 'category';
+	$version = $misc unless $version;
+	$pkg{"$category/$package"}[0]{"$path/$file"} = 1;
+	push @{$pkg{"$category/$package"}[1]}, $version;
+    }
+
+    unless (%pkg) {
+	print "No matched found\n";
+	exit;
+    }
+    my $num = 0;
+    while (my($catpkg, $rest) = each %pkg) {
+	my($filename, $versions) = @$rest;
+	print "\n" if $num++;
+	if (glob "/var/db/pkg/$catpkg-*") {
+	    print "[${[setcolor(1,32)]}[0]${[setcolor(1,7)]}[0]I$resetcolor] ${[setcolor(1,32)]}[0]$catpkg$resetcolor\n";
+	} else {
+	    my($cat, $pkg) = split '/', $catpkg;
+	    print "${[setcolor(0,32)]}[0]*$resetcolor $cat/${[setcolor(1,1)]}[0]$pkg$resetcolor\n";
+	}
+	print "     ${[setcolor(0,32)]}[0]Available versions:  ", join ' ', @$versions, "$resetcolor\n";
+        print "     ${[setcolor(0,32)]}[0]Matched Files:       $resetcolor", join '; ', keys %$filename, "\n";
+
+	next unless $is_gentoo;
+	if (my $ebuild = (glob "$portdir/$catpkg/*.ebuild")[-1]) {
+	    my($homepage, $description);
+	    open F, '<', $ebuild;
+	    while (<F>) {
+		$homepage = $1 if /^HOMEPAGE=['"]?([^'"]*)['"]?/;
+		$description = $1 if /^DESCRIPTION=['"]?([^'"]*)['"]?/;
+	    }
+	    close F;
+	    print "     ${[setcolor(0,32)]}[0]Homepage:$resetcolor            $homepage\n" if $homepage;
+	    print "     ${[setcolor(0,32)]}[0]Description:$resetcolor         $description\n" if $description;
+	}
+    }
+    print "\nFound $num matches\n";
+}
+
+unless ($ARGV[0]) {
+    die "Usage: ${[basename $0]}[0] filename\n";
+}
+main $ARGV[0];

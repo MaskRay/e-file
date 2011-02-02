@@ -1,0 +1,13 @@
+#+TITLE:     e-file
+#+AUTHOR:    MaskRay
+#+DATE:      2011-02-02
+#+LANGUAGE:  en
+#+OPTIONS:   num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+
+* Description
+e-file is like apt-file in debian, it's used to search package name via filename for gentoo.
+
+This project is a completely rewritten fork of `e-file' by bones7456 (http://luy.li/).
+
+* Usage
+e-file filename
